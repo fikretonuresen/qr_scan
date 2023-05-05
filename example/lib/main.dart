@@ -18,7 +18,8 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: QrScan(
         useBarcode: (String barcode) async {
-          debugPrint(barcode);
+          debugPrint("Barcode: $barcode");
+          return "0";
         },
       ),
     );
