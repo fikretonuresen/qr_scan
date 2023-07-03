@@ -4,18 +4,18 @@ version: 0.0.2
 #repository:
 
 environment:
-  sdk: '>=2.19.6 <3.0.0'
-  flutter: ">=2.5.0"
+  sdk: '>=3.0.5 <4.0.0'
+  flutter: ">=1.17.0"
 
 dependencies:
   camerawesome: ^1.4.0
   flutter:
     sdk: flutter
   google_mlkit_barcode_scanning: ^0.6.0
-  just_audio: ^0.9.32
+  just_audio: ^0.9.34
 
 dev_dependencies:
-  lint: ^2.0.1
+  lint: ^2.1.2
 
 flutter:
   assets:
