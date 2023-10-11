@@ -58,17 +58,14 @@ class _QrScanState extends State<QrScan> {
         // await failSound.setAsset("packages/qr_scan/assets/audio/fail.wav", initialPosition: const Duration(milliseconds: 1));
         await failSound.load();
         await failSound.play();
-        break;
       case "0":
         // await successSound.setAsset("packages/qr_scan/assets/audio/success.wav", initialPosition: const Duration(milliseconds: 1));
         await successSound.load();
         await successSound.play();
-        break;
       case "1":
         // await readSound.setAsset("packages/qr_scan/assets/audio/read.wav", initialPosition: const Duration(milliseconds: 1));
         await readSound.load();
         await readSound.play();
-        break;
     }
   }
 

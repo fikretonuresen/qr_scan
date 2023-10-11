@@ -5,30 +5,26 @@ extension MLKitUtils on AnalysisImage {
   InputImage toInputImage() {
     final planeData = when(nv21: (img) => img.planes, bgra8888: (img) => img.planes)
         ?.map(
-          (plane) => InputImagePlaneMetadata(
-            bytesPerRow: plane.bytesPerRow,
-            height: height,
-            width: width,
-          ),
+          (plane) => plane.bytesPerRow,
         )
         .toList();
 
-    final inputImageData = InputImageData(
+    final inputImageData = InputImageMetadata(
       size: size,
-      imageRotation: inputImageRotation,
-      inputImageFormat: inputImageFormat,
-      planeData: planeData,
+      rotation: inputImageRotation,
+      format: inputImageFormat,
+      bytesPerRow: planeData![0],
     );
 
     return when(
       nv21: (image) => InputImage.fromBytes(
         bytes: image.bytes,
-        inputImageData: inputImageData,
+        metadata: inputImageData,
       ),
       bgra8888: (image) {
         return InputImage.fromBytes(
           bytes: image.bytes,
-          inputImageData: inputImageData,
+          metadata: inputImageData,
         );
       },
     )!;
