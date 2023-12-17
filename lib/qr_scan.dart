@@ -78,8 +78,13 @@ class _QrScanState extends State<QrScan> {
                 onImageForAnalysis: _processImageBarcode,
                 bottomActionsBuilder: (state) => const SizedBox.shrink(),
                 middleContentBuilder: (state) => const SizedBox.shrink(),
-                saveConfig: SaveConfig.photo(pathBuilder: () => Future<String>.value("")),
-                aspectRatio: CameraAspectRatios.ratio_16_9,
+                saveConfig: SaveConfig.photo(),
+                // aspectRatio: CameraAspectRatios.ratio_16_9,
+                sensorConfig: SensorConfig.single(
+                  sensor: Sensor.position(SensorPosition.back),
+                  flashMode: FlashMode.auto,
+                  aspectRatio: CameraAspectRatios.ratio_16_9,
+                ),
                 previewFit: CameraPreviewFit.fitWidth,
                 topActionsBuilder: (state) => AwesomeTopActions(
                   state: state,
