@@ -22,15 +22,30 @@ class _QrScanState extends State<QrScan> {
   final checkSet = <String?>{};
   Responder? responder;
 
-  AudioPlayer readSound = AudioPlayer();
-  AudioPlayer successSound = AudioPlayer();
-  AudioPlayer failSound = AudioPlayer();
+  AudioPlayer readSound = AudioPlayer()
+    ..setVolume(0)
+    ..setAsset("packages/qr_scan/assets/audio/read.wav")
+    ..load()
+    ..play();
+  AudioPlayer successSound = AudioPlayer()
+    ..setVolume(0)
+    ..setAsset("packages/qr_scan/assets/audio/success.wav")
+    ..load()
+    ..play();
+  AudioPlayer failSound = AudioPlayer()
+    ..setVolume(0)
+    ..setAsset("packages/qr_scan/assets/audio/fail.wav")
+    ..load()
+    ..play();
 
   Future<void> initResponder() async {
     responder = await Responder.createImageProcessor();
-    await readSound.setAsset("packages/qr_scan/assets/audio/read.wav", initialPosition: const Duration(milliseconds: 1));
-    await successSound.setAsset("packages/qr_scan/assets/audio/success.wav", initialPosition: const Duration(milliseconds: 1));
-    await failSound.setAsset("packages/qr_scan/assets/audio/fail.wav", initialPosition: const Duration(milliseconds: 1));
+    // await readSound.setAsset("packages/qr_scan/assets/audio/read.wav");
+    // await readSound.setVolume(0);
+    // await readSound.load();
+    // await readSound.play();
+    // await successSound.setAsset("packages/qr_scan/assets/audio/success.wav");
+    // await failSound.setAsset("packages/qr_scan/assets/audio/fail.wav");
     setState(() {});
   }
 
@@ -55,15 +70,15 @@ class _QrScanState extends State<QrScan> {
   Future<void> playSound([String? value = ""]) async {
     switch (value) {
       case "-1":
-        // await failSound.setAsset("packages/qr_scan/assets/audio/fail.wav", initialPosition: const Duration(milliseconds: 1));
+        await failSound.setVolume(1);
         await failSound.load();
         await failSound.play();
       case "0":
-        // await successSound.setAsset("packages/qr_scan/assets/audio/success.wav", initialPosition: const Duration(milliseconds: 1));
+        await successSound.setVolume(1);
         await successSound.load();
         await successSound.play();
       case "1":
-        // await readSound.setAsset("packages/qr_scan/assets/audio/read.wav", initialPosition: const Duration(milliseconds: 1));
+        await readSound.setVolume(1);
         await readSound.load();
         await readSound.play();
     }
@@ -76,33 +91,34 @@ class _QrScanState extends State<QrScan> {
             : CameraAwesomeBuilder.awesome(
                 imageAnalysisConfig: AnalysisConfig(maxFramesPerSecond: 5),
                 onImageForAnalysis: _processImageBarcode,
-                bottomActionsBuilder: (state) => const SizedBox.shrink(),
-                middleContentBuilder: (state) => const SizedBox.shrink(),
                 saveConfig: SaveConfig.photo(),
-                // aspectRatio: CameraAspectRatios.ratio_16_9,
                 sensorConfig: SensorConfig.single(
                   sensor: Sensor.position(SensorPosition.back),
                   flashMode: FlashMode.auto,
                   aspectRatio: CameraAspectRatios.ratio_16_9,
                 ),
                 previewFit: CameraPreviewFit.fitWidth,
-                topActionsBuilder: (state) => AwesomeTopActions(
+                middleContentBuilder: (state) => const SizedBox.shrink(),
+                topActionsBuilder: (state) => const SizedBox.shrink(),
+                // bottomActionsBuilder: (state) => const SizedBox.shrink(),
+                bottomActionsBuilder: (state) => AwesomeTopActions(
+                  padding: const EdgeInsets.only(left: 30, right: 30, bottom: 20),
                   state: state,
                   children: [
                     AwesomeFlashButton(
                       state: state,
                       iconBuilder: (flashMode) {
                         final IconData icon;
-                        if (flashMode == FlashMode.none) {
-                          icon = Icons.flash_off;
-                        } else {
+                        if (flashMode == FlashMode.always) {
                           icon = Icons.flash_on;
+                        } else {
+                          icon = Icons.flash_off;
                         }
                         return AwesomeCircleWidget.icon(icon: icon);
                       },
                       onFlashTap: (sensorConfig, flashMode) async {
                         final FlashMode newFlashMode;
-                        if (flashMode == FlashMode.none) {
+                        if (flashMode != FlashMode.always) {
                           newFlashMode = FlashMode.always;
                         } else {
                           newFlashMode = FlashMode.none;
