@@ -86,58 +86,71 @@ class _QrScanState extends State<QrScan> {
 
   @override
   Widget build(BuildContext context) => Material(
-        child: responder == null
-            ? const Center(child: CircularProgressIndicator())
-            : CameraAwesomeBuilder.awesome(
-                imageAnalysisConfig: AnalysisConfig(maxFramesPerSecond: 5),
-                onImageForAnalysis: _processImageBarcode,
-                saveConfig: SaveConfig.photo(),
-                sensorConfig: SensorConfig.single(
-                  sensor: Sensor.position(SensorPosition.back),
-                  flashMode: FlashMode.auto,
-                  aspectRatio: CameraAspectRatios.ratio_16_9,
-                ),
-                previewFit: CameraPreviewFit.fitWidth,
-                middleContentBuilder: (state) => const SizedBox.shrink(),
-                topActionsBuilder: (state) => const SizedBox.shrink(),
-                // bottomActionsBuilder: (state) => const SizedBox.shrink(),
-                bottomActionsBuilder: (state) => AwesomeTopActions(
-                  padding: const EdgeInsets.only(left: 30, right: 30, bottom: 20),
-                  state: state,
-                  children: [
-                    AwesomeFlashButton(
-                      state: state,
-                      iconBuilder: (flashMode) {
-                        final IconData icon;
-                        if (flashMode == FlashMode.always) {
-                          icon = Icons.flash_on;
-                        } else {
-                          icon = Icons.flash_off;
-                        }
-                        return AwesomeCircleWidget.icon(icon: icon);
-                      },
-                      onFlashTap: (sensorConfig, flashMode) async {
-                        final FlashMode newFlashMode;
-                        if (flashMode != FlashMode.always) {
-                          newFlashMode = FlashMode.always;
-                        } else {
-                          newFlashMode = FlashMode.none;
-                        }
-                        await sensorConfig.setFlashMode(newFlashMode);
-                      },
+        child: LayoutBuilder(
+            builder: (context, boxConstraints) => responder == null
+                ? const Center(child: CircularProgressIndicator())
+                : CameraAwesomeBuilder.awesome(
+                    imageAnalysisConfig: AnalysisConfig(maxFramesPerSecond: 5),
+                    onImageForAnalysis: _processImageBarcode,
+                    saveConfig: SaveConfig.photo(),
+                    sensorConfig: SensorConfig.single(
+                      sensor: Sensor.position(SensorPosition.back),
+                      flashMode: FlashMode.auto,
+                      aspectRatio: CameraAspectRatios.values[1],
                     ),
-                    if (state is PhotoCameraState) AwesomeAspectRatioButton(state: state),
-                    AwesomeCameraSwitchButton(
+                    previewFit: CameraPreviewFit.contain,
+                    middleContentBuilder: (state) => const SizedBox.shrink(),
+                    topActionsBuilder: (state) => const SizedBox.shrink(),
+                    // bottomActionsBuilder: (state) => const SizedBox.shrink(),
+                    bottomActionsBuilder: (state) => AwesomeTopActions(
+                      padding: const EdgeInsets.only(left: 30, right: 30, bottom: 20),
                       state: state,
-                      scale: 1,
-                      onSwitchTap: (state) async {
-                        await state.switchCameraSensor(aspectRatio: state.sensorConfig.aspectRatio);
-                      },
+                      children: [
+                        AwesomeFlashButton(
+                          state: state,
+                          iconBuilder: (flashMode) {
+                            final IconData icon;
+                            if (flashMode == FlashMode.always) {
+                              icon = Icons.flash_on;
+                            } else {
+                              icon = Icons.flash_off;
+                            }
+                            return AwesomeCircleWidget.icon(icon: icon);
+                          },
+                          onFlashTap: (sensorConfig, flashMode) async {
+                            final FlashMode newFlashMode;
+                            if (flashMode != FlashMode.always) {
+                              newFlashMode = FlashMode.always;
+                            } else {
+                              newFlashMode = FlashMode.none;
+                            }
+                            await sensorConfig.setFlashMode(newFlashMode);
+                          },
+                        ),
+                        if (state is PhotoCameraState)
+                          AwesomeAspectRatioButton(
+                            state: state,
+                            onAspectRatioTap: (sensorConfig, cameraAspectRatios) async {
+                              final CameraAspectRatios newCameraAspectRatios;
+                              if (cameraAspectRatios != CameraAspectRatios.ratio_16_9) {
+                                newCameraAspectRatios = CameraAspectRatios.ratio_16_9;
+                              } else {
+                                newCameraAspectRatios = CameraAspectRatios.ratio_4_3;
+                              }
+                              await sensorConfig.setAspectRatio(newCameraAspectRatios);
+                            },
+                          ),
+                        AwesomeCameraSwitchButton(
+                          state: state,
+                          scale: 1,
+                          onSwitchTap: (state) async {
+                            await state.switchCameraSensor(aspectRatio: state.sensorConfig.aspectRatio);
+                          },
+                        ),
+                        // if (state is PhotoCameraState) AwesomeLocationButton(state: state),
+                      ],
                     ),
-                    // if (state is PhotoCameraState) AwesomeLocationButton(state: state),
-                  ],
-                ),
-              ),
+                  )),
       );
 
   Future<void> _processImageBarcode(AnalysisImage img) async {
