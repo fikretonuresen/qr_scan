@@ -9,16 +9,17 @@ import 'package:qr_scan/isolate.dart';
 import "package:qr_scan/mlkit_utils.dart";
 
 class QrScan extends StatefulWidget {
-  const QrScan({super.key, required this.useBarcode});
+  const QrScan({super.key, required this.useBarcode, this.selectedCameraAspectRatio = 0});
 
   final FutureOr<String?> Function(String barcode) useBarcode;
+  final int selectedCameraAspectRatio;
 
   @override
   State<QrScan> createState() => _QrScanState();
 }
 
 class _QrScanState extends State<QrScan> {
-  int selectedCameraAspectRatio = 0;
+  late int selectedCameraAspectRatio = widget.selectedCameraAspectRatio;
   bool _isProcessing = false;
   final checkSet = <String?>{};
   Responder? responder;
