@@ -18,6 +18,7 @@ class QrScan extends StatefulWidget {
 }
 
 class _QrScanState extends State<QrScan> {
+  int selectedCameraAspectRatio = 0;
   bool _isProcessing = false;
   final checkSet = <String?>{};
   Responder? responder;
@@ -85,25 +86,29 @@ class _QrScanState extends State<QrScan> {
   }
 
   @override
-  Widget build(BuildContext context) => Material(
-        child: LayoutBuilder(
-            builder: (context, boxConstraints) => responder == null
-                ? const Center(child: CircularProgressIndicator())
-                : CameraAwesomeBuilder.awesome(
-                    imageAnalysisConfig: AnalysisConfig(maxFramesPerSecond: 5),
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
+        return Material(
+          child: responder == null
+              ? const Center(child: CircularProgressIndicator())
+              : SizedBox(
+                  width: constraints.maxWidth,
+                  height: constraints.maxWidth * (selectedCameraAspectRatio == 0 ? 16 / 9 : 4 / 3),
+                  child: CameraAwesomeBuilder.awesome(
+                    imageAnalysisConfig: AnalysisConfig(maxFramesPerSecond: 15),
                     onImageForAnalysis: _processImageBarcode,
                     saveConfig: SaveConfig.photo(),
                     sensorConfig: SensorConfig.single(
                       sensor: Sensor.position(SensorPosition.back),
-                      flashMode: FlashMode.auto,
-                      aspectRatio: CameraAspectRatios.values[1],
+                      flashMode: FlashMode.none,
+                      aspectRatio: CameraAspectRatios.values[selectedCameraAspectRatio],
+                      zoom: 0.0,
                     ),
-                    previewFit: CameraPreviewFit.contain,
+                    previewFit: CameraPreviewFit.cover,
                     middleContentBuilder: (state) => const SizedBox.shrink(),
                     topActionsBuilder: (state) => const SizedBox.shrink(),
                     // bottomActionsBuilder: (state) => const SizedBox.shrink(),
                     bottomActionsBuilder: (state) => AwesomeTopActions(
-                      padding: const EdgeInsets.only(left: 30, right: 30, bottom: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
                       state: state,
                       children: [
                         AwesomeFlashButton(
@@ -137,6 +142,7 @@ class _QrScanState extends State<QrScan> {
                               } else {
                                 newCameraAspectRatios = CameraAspectRatios.ratio_4_3;
                               }
+                              setState(() => selectedCameraAspectRatio = newCameraAspectRatios.index);
                               await sensorConfig.setAspectRatio(newCameraAspectRatios);
                             },
                           ),
@@ -150,8 +156,10 @@ class _QrScanState extends State<QrScan> {
                         // if (state is PhotoCameraState) AwesomeLocationButton(state: state),
                       ],
                     ),
-                  )),
-      );
+                  ),
+                ),
+        );
+      });
 
   Future<void> _processImageBarcode(AnalysisImage img) async {
     if (_isProcessing) return;
