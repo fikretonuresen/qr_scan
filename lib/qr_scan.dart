@@ -177,6 +177,7 @@ class _QrScanState extends State<QrScan> {
   }
 
   Future<void> webService(List<String?> barcodes) async {
+    if (!mounted) return;
     if (barcodes.length == 1) {
       final response = await widget.useBarcode(barcodes.first ?? "");
       playSound(response);
