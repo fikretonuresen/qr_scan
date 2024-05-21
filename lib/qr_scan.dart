@@ -70,6 +70,7 @@ class _QrScanState extends State<QrScan> {
   }
 
   Future<void> playSound([String? value = ""]) async {
+    if (!mounted) return;
     switch (value) {
       case "-1":
         await failSound.setVolume(1);
@@ -115,21 +116,11 @@ class _QrScanState extends State<QrScan> {
                         AwesomeFlashButton(
                           state: state,
                           iconBuilder: (flashMode) {
-                            final IconData icon;
-                            if (flashMode == FlashMode.always) {
-                              icon = Icons.flash_on;
-                            } else {
-                              icon = Icons.flash_off;
-                            }
+                            final icon = flashMode == FlashMode.always ? Icons.flash_on : Icons.flash_off;
                             return AwesomeCircleWidget.icon(icon: icon);
                           },
                           onFlashTap: (sensorConfig, flashMode) async {
-                            final FlashMode newFlashMode;
-                            if (flashMode != FlashMode.always) {
-                              newFlashMode = FlashMode.always;
-                            } else {
-                              newFlashMode = FlashMode.none;
-                            }
+                            final newFlashMode = flashMode != FlashMode.always ? FlashMode.always : FlashMode.none;
                             await sensorConfig.setFlashMode(newFlashMode);
                           },
                         ),
@@ -137,12 +128,7 @@ class _QrScanState extends State<QrScan> {
                           AwesomeAspectRatioButton(
                             state: state,
                             onAspectRatioTap: (sensorConfig, cameraAspectRatios) async {
-                              final CameraAspectRatios newCameraAspectRatios;
-                              if (cameraAspectRatios != CameraAspectRatios.ratio_16_9) {
-                                newCameraAspectRatios = CameraAspectRatios.ratio_16_9;
-                              } else {
-                                newCameraAspectRatios = CameraAspectRatios.ratio_4_3;
-                              }
+                              final newCameraAspectRatios = cameraAspectRatios != CameraAspectRatios.ratio_16_9 ? CameraAspectRatios.ratio_16_9 : CameraAspectRatios.ratio_4_3;
                               setState(() => selectedCameraAspectRatio = newCameraAspectRatios.index);
                               await sensorConfig.setAspectRatio(newCameraAspectRatios);
                             },
@@ -150,9 +136,7 @@ class _QrScanState extends State<QrScan> {
                         AwesomeCameraSwitchButton(
                           state: state,
                           scale: 1,
-                          onSwitchTap: (state) async {
-                            await state.switchCameraSensor(aspectRatio: state.sensorConfig.aspectRatio);
-                          },
+                          onSwitchTap: (state) async => await state.switchCameraSensor(aspectRatio: state.sensorConfig.aspectRatio),
                         ),
                         // if (state is PhotoCameraState) AwesomeLocationButton(state: state),
                       ],
@@ -197,26 +181,22 @@ class _QrScanState extends State<QrScan> {
       final response = await widget.useBarcode(barcodes.first ?? "");
       playSound(response);
     } else if (barcodes.length > 1) {
-      final List<Widget> actions = <Widget>[];
-      for (final element in barcodes) {
-        actions.add(
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              final response = await widget.useBarcode(element ?? "");
-              playSound(response);
-              if (!mounted) return;
-              Navigator.pop(context);
-            },
-            child: Text(element ?? ""),
-          ),
-        );
-      }
       await showCupertinoModalPopup<void>(
         context: context,
         builder: (context) => CupertinoActionSheet(
           title: const Text("Birden Fazla Barkod Bulundu!"),
           message: const Text("İşlem yapmak istediğiniz barkodu seçiniz."),
-          actions: actions,
+          actions: [
+            for (final element in barcodes)
+              CupertinoActionSheetAction(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final response = await widget.useBarcode(element ?? "");
+                  if (mounted) playSound(response);
+                },
+                child: Text(element ?? ""),
+              ),
+          ],
         ),
       );
     }

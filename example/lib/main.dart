@@ -14,14 +14,66 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: QrScan(
+  Widget build(BuildContext context) => const MaterialApp(home: MainPage());
+}
+
+class MainPage extends StatefulWidget {
+  const MainPage({super.key});
+
+  @override
+  State<MainPage> createState() => _MainPageState();
+}
+
+class _MainPageState extends State<MainPage> {
+  String oneTimeScanResult = "";
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("One Time Scan Result : $oneTimeScanResult"),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                  onPressed: () async {
+                    final result = await Navigator.push(context, MaterialPageRoute<String?>(builder: (context) => const OneTimeScanPage()));
+                    if (result == null) return;
+                    setState(() => oneTimeScanResult = result);
+                  },
+                  child: const Text("One Time Scan")),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute<String?>(builder: (context) => const ContinuousScanPage()));
+                  },
+                  child: const Text("Continuous Scan")),
+            ],
+          ),
+        ),
+      );
+}
+
+class OneTimeScanPage extends StatelessWidget {
+  const OneTimeScanPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => QrScan(
         useBarcode: (String barcode) async {
-          debugPrint("Barcode: $barcode");
+          debugPrint("One Time Scan Barcode: $barcode");
+          Navigator.pop(context, barcode);
           return "0";
         },
-      ),
-    );
-  }
+      );
+}
+
+class ContinuousScanPage extends StatelessWidget {
+  const ContinuousScanPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => QrScan(
+        useBarcode: (String barcode) async {
+          debugPrint("Continuous Scan Barcode: $barcode");
+          return "0";
+        },
+      );
 }
