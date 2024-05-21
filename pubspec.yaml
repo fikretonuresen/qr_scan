@@ -1,6 +1,6 @@
 name: qr_scan
 description: Combines Google's ML Kit Barcode Scanning with CamerAwesome to scan qr and barcodes.
-version: 0.0.6+1
+version: 0.0.6+2
 #repository:
 
 environment:

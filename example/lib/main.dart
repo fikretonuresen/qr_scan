@@ -53,16 +53,29 @@ class _MainPageState extends State<MainPage> {
       );
 }
 
-class OneTimeScanPage extends StatelessWidget {
+class OneTimeScanPage extends StatefulWidget {
   const OneTimeScanPage({super.key});
 
   @override
-  Widget build(BuildContext context) => QrScan(
-        useBarcode: (String barcode) async {
-          debugPrint("One Time Scan Barcode: $barcode");
-          Navigator.pop(context, barcode);
-          return "0";
+  State<OneTimeScanPage> createState() => _OneTimeScanPageState();
+}
+
+class _OneTimeScanPageState extends State<OneTimeScanPage> {
+  String _barcode = "";
+  @override
+  Widget build(BuildContext context) => PopScope(
+        canPop: false,
+        onPopInvoked: (didPop) {
+          if (!didPop) Navigator.pop(context, _barcode);
         },
+        child: QrScan(
+          useBarcode: (String barcode) async {
+            _barcode = barcode;
+            debugPrint("One Time Scan Barcode: $barcode");
+            Navigator.pop(context);
+            return "0";
+          },
+        ),
       );
 }
 

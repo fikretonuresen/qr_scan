@@ -21,6 +21,7 @@ class QrScan extends StatefulWidget {
 class _QrScanState extends State<QrScan> {
   late int selectedCameraAspectRatio = widget.selectedCameraAspectRatio;
   bool _isProcessing = false;
+  bool _isDisposing = false;
   final checkSet = <String?>{};
   Responder? responder;
 
@@ -42,12 +43,6 @@ class _QrScanState extends State<QrScan> {
 
   Future<void> initResponder() async {
     responder = await Responder.createImageProcessor();
-    // await readSound.setAsset("packages/qr_scan/assets/audio/read.wav");
-    // await readSound.setVolume(0);
-    // await readSound.load();
-    // await readSound.play();
-    // await successSound.setAsset("packages/qr_scan/assets/audio/success.wav");
-    // await failSound.setAsset("packages/qr_scan/assets/audio/fail.wav");
     setState(() {});
   }
 
@@ -58,6 +53,9 @@ class _QrScanState extends State<QrScan> {
   }
 
   Future<void> disposeResponder() async {
+    if (!mounted) return;
+    _isDisposing = true;
+    responder?.dispose();
     await readSound.dispose();
     await successSound.dispose();
     await failSound.dispose();
@@ -150,17 +148,18 @@ class _QrScanState extends State<QrScan> {
     if (_isProcessing) return;
     _isProcessing = true;
     final inputImage = img.toInputImage();
-    try {
-      final recognizedBarCodes = await responder?.getProcessedImages(inputImage);
-      if (recognizedBarCodes == null) return;
-      final processedBarcodes = processBarcodes(recognizedBarCodes);
-      if (processedBarcodes.isNotEmpty) {
-        playSound("1");
-        await webService(processedBarcodes);
-      }
-    } catch (e) {
-      debugPrint(e.toString());
+    // try {
+    final recognizedBarCodes = await responder?.getProcessedImages(inputImage);
+    if (_isDisposing) return;
+    if (recognizedBarCodes == null) return;
+    final processedBarcodes = processBarcodes(recognizedBarCodes);
+    if (processedBarcodes.isNotEmpty) {
+      await playSound("1");
+      await webService(processedBarcodes);
     }
+    // } catch (e) {
+    //   debugPrint(e.toString());
+    // }
     _isProcessing = false;
   }
 
@@ -178,9 +177,10 @@ class _QrScanState extends State<QrScan> {
 
   Future<void> webService(List<String?> barcodes) async {
     if (!mounted) return;
+    if (_isDisposing) return;
     if (barcodes.length == 1) {
       final response = await widget.useBarcode(barcodes.first ?? "");
-      playSound(response);
+      await playSound(response);
     } else if (barcodes.length > 1) {
       await showCupertinoModalPopup<void>(
         context: context,
@@ -193,7 +193,7 @@ class _QrScanState extends State<QrScan> {
                 onPressed: () async {
                   Navigator.pop(context);
                   final response = await widget.useBarcode(element ?? "");
-                  if (mounted) playSound(response);
+                  if (mounted) await playSound(response);
                 },
                 child: Text(element ?? ""),
               ),
