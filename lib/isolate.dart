@@ -20,6 +20,8 @@ class Responder {
     return Responder(rp, broadcastRp, communicatorSendPort);
   }
 
+  void dispose() => communicatorSendPort.send(false);
+
   Future<List<Barcode>> getProcessedImages(InputImage inputImage) async {
     communicatorSendPort.send(inputImage);
     final x = broadcastRp.takeWhile((element) => element is List<Barcode>).cast<List<Barcode>>().take(1).first;
@@ -44,6 +46,11 @@ Future<void> _imageProcessCommunicator(SendPort sp) async {
       final recognizedBarCodes = await barcodeScanner.processImage(message);
       sp.send(recognizedBarCodes);
       continue;
+    }
+    if (message is bool && message == false) {
+      rp.close();
+      Isolate.current.kill();
+      break;
     }
     continue;
   }

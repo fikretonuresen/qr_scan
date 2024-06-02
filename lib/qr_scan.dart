@@ -9,16 +9,19 @@ import 'package:qr_scan/isolate.dart';
 import "package:qr_scan/mlkit_utils.dart";
 
 class QrScan extends StatefulWidget {
-  const QrScan({super.key, required this.useBarcode});
+  const QrScan({super.key, required this.useBarcode, this.selectedCameraAspectRatio = 0});
 
   final FutureOr<String?> Function(String barcode) useBarcode;
+  final int selectedCameraAspectRatio;
 
   @override
   State<QrScan> createState() => _QrScanState();
 }
 
 class _QrScanState extends State<QrScan> {
+  late int selectedCameraAspectRatio = widget.selectedCameraAspectRatio;
   bool _isProcessing = false;
+  bool _isDisposing = false;
   final checkSet = <String?>{};
   Responder? responder;
 
@@ -40,12 +43,6 @@ class _QrScanState extends State<QrScan> {
 
   Future<void> initResponder() async {
     responder = await Responder.createImageProcessor();
-    // await readSound.setAsset("packages/qr_scan/assets/audio/read.wav");
-    // await readSound.setVolume(0);
-    // await readSound.load();
-    // await readSound.play();
-    // await successSound.setAsset("packages/qr_scan/assets/audio/success.wav");
-    // await failSound.setAsset("packages/qr_scan/assets/audio/fail.wav");
     setState(() {});
   }
 
@@ -56,6 +53,9 @@ class _QrScanState extends State<QrScan> {
   }
 
   Future<void> disposeResponder() async {
+    if (!mounted) return;
+    _isDisposing = true;
+    responder?.dispose();
     await readSound.dispose();
     await successSound.dispose();
     await failSound.dispose();
@@ -68,6 +68,7 @@ class _QrScanState extends State<QrScan> {
   }
 
   Future<void> playSound([String? value = ""]) async {
+    if (!mounted) return;
     switch (value) {
       case "-1":
         await failSound.setVolume(1);
@@ -85,76 +86,80 @@ class _QrScanState extends State<QrScan> {
   }
 
   @override
-  Widget build(BuildContext context) => Material(
-        child: responder == null
-            ? const Center(child: CircularProgressIndicator())
-            : CameraAwesomeBuilder.awesome(
-                imageAnalysisConfig: AnalysisConfig(maxFramesPerSecond: 5),
-                onImageForAnalysis: _processImageBarcode,
-                saveConfig: SaveConfig.photo(),
-                sensorConfig: SensorConfig.single(
-                  sensor: Sensor.position(SensorPosition.back),
-                  flashMode: FlashMode.auto,
-                  aspectRatio: CameraAspectRatios.ratio_16_9,
-                ),
-                previewFit: CameraPreviewFit.fitWidth,
-                middleContentBuilder: (state) => const SizedBox.shrink(),
-                topActionsBuilder: (state) => const SizedBox.shrink(),
-                // bottomActionsBuilder: (state) => const SizedBox.shrink(),
-                bottomActionsBuilder: (state) => AwesomeTopActions(
-                  padding: const EdgeInsets.only(left: 30, right: 30, bottom: 20),
-                  state: state,
-                  children: [
-                    AwesomeFlashButton(
-                      state: state,
-                      iconBuilder: (flashMode) {
-                        final IconData icon;
-                        if (flashMode == FlashMode.always) {
-                          icon = Icons.flash_on;
-                        } else {
-                          icon = Icons.flash_off;
-                        }
-                        return AwesomeCircleWidget.icon(icon: icon);
-                      },
-                      onFlashTap: (sensorConfig, flashMode) async {
-                        final FlashMode newFlashMode;
-                        if (flashMode != FlashMode.always) {
-                          newFlashMode = FlashMode.always;
-                        } else {
-                          newFlashMode = FlashMode.none;
-                        }
-                        await sensorConfig.setFlashMode(newFlashMode);
-                      },
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
+        return Material(
+          child: responder == null
+              ? const Center(child: CircularProgressIndicator())
+              : SizedBox(
+                  width: constraints.maxWidth,
+                  height: constraints.maxWidth * (selectedCameraAspectRatio == 0 ? 16 / 9 : 4 / 3),
+                  child: CameraAwesomeBuilder.awesome(
+                    imageAnalysisConfig: AnalysisConfig(maxFramesPerSecond: 15),
+                    onImageForAnalysis: _processImageBarcode,
+                    saveConfig: SaveConfig.photo(),
+                    sensorConfig: SensorConfig.single(
+                      sensor: Sensor.position(SensorPosition.back),
+                      flashMode: FlashMode.none,
+                      aspectRatio: CameraAspectRatios.values[selectedCameraAspectRatio],
+                      zoom: 0.0,
                     ),
-                    if (state is PhotoCameraState) AwesomeAspectRatioButton(state: state),
-                    AwesomeCameraSwitchButton(
+                    previewFit: CameraPreviewFit.cover,
+                    middleContentBuilder: (state) => const SizedBox.shrink(),
+                    topActionsBuilder: (state) => const SizedBox.shrink(),
+                    // bottomActionsBuilder: (state) => const SizedBox.shrink(),
+                    bottomActionsBuilder: (state) => AwesomeTopActions(
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
                       state: state,
-                      scale: 1,
-                      onSwitchTap: (state) async {
-                        await state.switchCameraSensor(aspectRatio: state.sensorConfig.aspectRatio);
-                      },
+                      children: [
+                        AwesomeFlashButton(
+                          state: state,
+                          iconBuilder: (flashMode) {
+                            final icon = flashMode == FlashMode.always ? Icons.flash_on : Icons.flash_off;
+                            return AwesomeCircleWidget.icon(icon: icon);
+                          },
+                          onFlashTap: (sensorConfig, flashMode) async {
+                            final newFlashMode = flashMode != FlashMode.always ? FlashMode.always : FlashMode.none;
+                            await sensorConfig.setFlashMode(newFlashMode);
+                          },
+                        ),
+                        if (state is PhotoCameraState)
+                          AwesomeAspectRatioButton(
+                            state: state,
+                            onAspectRatioTap: (sensorConfig, cameraAspectRatios) async {
+                              final newCameraAspectRatios = cameraAspectRatios != CameraAspectRatios.ratio_16_9 ? CameraAspectRatios.ratio_16_9 : CameraAspectRatios.ratio_4_3;
+                              setState(() => selectedCameraAspectRatio = newCameraAspectRatios.index);
+                              await sensorConfig.setAspectRatio(newCameraAspectRatios);
+                            },
+                          ),
+                        AwesomeCameraSwitchButton(
+                          state: state,
+                          scale: 1,
+                          onSwitchTap: (state) async => await state.switchCameraSensor(aspectRatio: state.sensorConfig.aspectRatio),
+                        ),
+                        // if (state is PhotoCameraState) AwesomeLocationButton(state: state),
+                      ],
                     ),
-                    // if (state is PhotoCameraState) AwesomeLocationButton(state: state),
-                  ],
+                  ),
                 ),
-              ),
-      );
+        );
+      });
 
   Future<void> _processImageBarcode(AnalysisImage img) async {
     if (_isProcessing) return;
     _isProcessing = true;
     final inputImage = img.toInputImage();
-    try {
-      final recognizedBarCodes = await responder?.getProcessedImages(inputImage);
-      if (recognizedBarCodes == null) return;
-      final processedBarcodes = processBarcodes(recognizedBarCodes);
-      if (processedBarcodes.isNotEmpty) {
-        playSound("1");
-        await webService(processedBarcodes);
-      }
-    } catch (e) {
-      debugPrint(e.toString());
+    // try {
+    final recognizedBarCodes = await responder?.getProcessedImages(inputImage);
+    if (_isDisposing) return;
+    if (recognizedBarCodes == null) return;
+    final processedBarcodes = processBarcodes(recognizedBarCodes);
+    if (processedBarcodes.isNotEmpty) {
+      await playSound("1");
+      await webService(processedBarcodes);
     }
+    // } catch (e) {
+    //   debugPrint(e.toString());
+    // }
     _isProcessing = false;
   }
 
@@ -171,30 +176,28 @@ class _QrScanState extends State<QrScan> {
   }
 
   Future<void> webService(List<String?> barcodes) async {
+    if (!mounted) return;
+    if (_isDisposing) return;
     if (barcodes.length == 1) {
       final response = await widget.useBarcode(barcodes.first ?? "");
-      playSound(response);
+      await playSound(response);
     } else if (barcodes.length > 1) {
-      final List<Widget> actions = <Widget>[];
-      for (final element in barcodes) {
-        actions.add(
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              final response = await widget.useBarcode(element ?? "");
-              playSound(response);
-              if (!mounted) return;
-              Navigator.pop(context);
-            },
-            child: Text(element ?? ""),
-          ),
-        );
-      }
       await showCupertinoModalPopup<void>(
         context: context,
         builder: (context) => CupertinoActionSheet(
           title: const Text("Birden Fazla Barkod Bulundu!"),
           message: const Text("İşlem yapmak istediğiniz barkodu seçiniz."),
-          actions: actions,
+          actions: [
+            for (final element in barcodes)
+              CupertinoActionSheetAction(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final response = await widget.useBarcode(element ?? "");
+                  if (mounted) await playSound(response);
+                },
+                child: Text(element ?? ""),
+              ),
+          ],
         ),
       );
     }
