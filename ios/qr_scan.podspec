@@ -5,7 +5,7 @@
 Pod::Spec.new do |s|
   s.name             = 'qr_scan'
   s.version          = '0.0.1'
-  s.summary          = 'Combines Google's ML Kit Barcode Scanning with CamerAwesome to scan qr and barcodes.'
+  s.summary          = "Combines Google's ML Kit Barcode Scanning with CamerAwesome to scan qr and barcodes."
   s.description      = <<-DESC
 Combines Google's ML Kit Barcode Scanning with CamerAwesome to scan qr and barcodes.
                        DESC
