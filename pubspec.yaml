@@ -1,6 +1,6 @@
 name: qr_scan
 description: Combines Google's ML Kit Barcode Scanning with CamerAwesome to scan qr and barcodes.
-version: 0.0.6+2
+version: 0.0.7+3
 #repository:
 
 environment:
@@ -8,14 +8,14 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
-  camerawesome: ^2.0.1
   flutter:
     sdk: flutter
-  google_mlkit_barcode_scanning: ^0.12.0
-  just_audio: ^0.9.38
+  camerawesome: 2.1.0
+  google_mlkit_barcode_scanning: 0.13.0
+  just_audio: ^0.9.46
 
 dev_dependencies:
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
   assets:
