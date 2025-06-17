@@ -1,6 +1,6 @@
 name: qr_scan
 description: "Combines Google's ML Kit Barcode Scanning with CamerAwesome to scan qr and barcodes"
-version: 0.0.6
+version: 0.0.7
 homepage: "https://www.sezinsoft.com/"
 
 environment:
@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   plugin_platform_interface: ^2.0.2
-  camerawesome: ^2.1.0
+  camerawesome: ^2.5.0
   google_mlkit_barcode_scanning: ^0.13.0
   just_audio: ^0.9.41
 
