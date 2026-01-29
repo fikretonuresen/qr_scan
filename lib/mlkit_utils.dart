@@ -9,11 +9,15 @@ extension MLKitUtils on AnalysisImage {
         )
         .toList();
 
+    if (planeData == null || planeData.isEmpty) {
+      throw StateError('No plane data available from camera image');
+    }
+
     final inputImageData = InputImageMetadata(
       size: size,
       rotation: inputImageRotation,
       format: inputImageFormat,
-      bytesPerRow: planeData![0],
+      bytesPerRow: planeData[0],
     );
 
     return when(

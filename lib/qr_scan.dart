@@ -9,10 +9,18 @@ import 'package:qr_scan/isolate.dart';
 import "package:qr_scan/mlkit_utils.dart";
 
 class QrScan extends StatefulWidget {
-  const QrScan({super.key, required this.useBarcode, this.selectedCameraAspectRatio = 0});
+  const QrScan({
+    super.key,
+    required this.useBarcode,
+    this.selectedCameraAspectRatio = 0,
+    this.multiBarcodeTitle = "Multiple Barcodes Found",
+    this.multiBarcodeMessage = "Select the barcode you want to use.",
+  });
 
   final FutureOr<String?> Function(String barcode) useBarcode;
   final int selectedCameraAspectRatio;
+  final String multiBarcodeTitle;
+  final String multiBarcodeMessage;
 
   @override
   State<QrScan> createState() => _QrScanState();
@@ -148,19 +156,20 @@ class _QrScanState extends State<QrScan> {
     if (_isProcessing) return;
     _isProcessing = true;
     final inputImage = img.toInputImage();
-    // try {
-    final recognizedBarCodes = await responder?.getProcessedImages(inputImage);
-    if (_isDisposing) return;
-    if (recognizedBarCodes == null) return;
-    final processedBarcodes = processBarcodes(recognizedBarCodes);
-    if (processedBarcodes.isNotEmpty) {
-      await playSound("1");
-      await webService(processedBarcodes);
+    try {
+      final recognizedBarCodes = await responder?.getProcessedImages(inputImage);
+      if (_isDisposing) return;
+      if (recognizedBarCodes == null) return;
+      final processedBarcodes = processBarcodes(recognizedBarCodes);
+      if (processedBarcodes.isNotEmpty) {
+        await playSound("1");
+        await webService(processedBarcodes);
+      }
+    } catch (e) {
+      debugPrint('Barcode processing error: $e');
+    } finally {
+      _isProcessing = false;
     }
-    // } catch (e) {
-    //   debugPrint(e.toString());
-    // }
-    _isProcessing = false;
   }
 
   List<String?> processBarcodes(List<Barcode> barcodes) {
@@ -185,8 +194,8 @@ class _QrScanState extends State<QrScan> {
       await showCupertinoModalPopup<void>(
         context: context,
         builder: (context) => CupertinoActionSheet(
-          title: const Text("Birden Fazla Barkod Bulundu!"),
-          message: const Text("İşlem yapmak istediğiniz barkodu seçiniz."),
+          title: Text(widget.multiBarcodeTitle),
+          message: Text(widget.multiBarcodeMessage),
           actions: [
             for (final element in barcodes)
               CupertinoActionSheetAction(
