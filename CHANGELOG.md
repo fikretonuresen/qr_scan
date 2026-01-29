@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-01-29
+
+### BREAKING CHANGES
+- **Callback signature changed**: `useBarcode` now receives `ScannedBarcode` instead of `String` and returns `ScanSoundResult?` instead of `String?`
+- Access raw value via `barcode.rawValue`, format via `barcode.format`, type via `barcode.type`
+
+### Added
+- `ScanSoundResult` enum replacing magic strings (`"0"` → `.success`, `"1"` → `.read`, `"-1"` → `.fail`)
+- `ScannedBarcode` class with `rawValue`, `displayValue`, `format`, and `type` fields
+- `enableAudio` parameter to disable sound feedback (default: `true`)
+- `debounceDuration` parameter to configure duplicate scan prevention (default: 2 seconds)
+- `barcodeFormats` parameter to filter which barcode formats are scanned (default: all)
+- `BarcodeFormat` and `BarcodeType` re-exported for convenience
+
+### Changed
+- Isolate rewritten with spawn-time configuration (eliminates race conditions)
+- Isolate now properly disposes `BarcodeScanner` on cleanup (no more `Isolate.current.kill()`)
+- Barcode wrapping happens in background isolate (better main thread performance)
+- Audio players are nullable and only initialized when `enableAudio` is true
+
 ## [0.1.0] - 2026-01-29
 
 ### BREAKING CHANGES
@@ -64,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate scan prevention with 2-second cooldown
 - Android and iOS support
 
+[0.2.0]: https://github.com/sezinsoft/qr_scan/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/sezinsoft/qr_scan/compare/v0.0.7...v0.1.0
 [0.0.7]: https://github.com/sezinsoft/qr_scan/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/sezinsoft/qr_scan/compare/v0.0.5...v0.0.6

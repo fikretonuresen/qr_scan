@@ -36,7 +36,10 @@ class _MainPageState extends State<MainPage> {
               const SizedBox(height: 20),
               ElevatedButton(
                   onPressed: () async {
-                    final result = await Navigator.push(context, MaterialPageRoute<String?>(builder: (context) => const OneTimeScanPage()));
+                    final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute<String?>(
+                            builder: (context) => const OneTimeScanPage()));
                     if (result == null) return;
                     setState(() => oneTimeScanResult = result);
                   },
@@ -44,7 +47,10 @@ class _MainPageState extends State<MainPage> {
               const SizedBox(height: 12),
               ElevatedButton(
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute<String?>(builder: (context) => const ContinuousScanPage()));
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute<String?>(
+                            builder: (context) => const ContinuousScanPage()));
                   },
                   child: const Text("Continuous Scan")),
             ],
@@ -69,11 +75,11 @@ class _OneTimeScanPageState extends State<OneTimeScanPage> {
           if (!didPop) Navigator.pop(context, _barcode);
         },
         child: QrScan(
-          useBarcode: (String barcode) async {
-            _barcode = barcode;
-            debugPrint("One Time Scan Barcode: $barcode");
+          useBarcode: (ScannedBarcode barcode) async {
+            _barcode = barcode.rawValue ?? "";
+            debugPrint("One Time Scan Barcode: ${barcode.rawValue}");
             Navigator.pop(context);
-            return "0";
+            return ScanSoundResult.success;
           },
         ),
       );
@@ -84,9 +90,9 @@ class ContinuousScanPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => QrScan(
-        useBarcode: (String barcode) async {
-          debugPrint("Continuous Scan Barcode: $barcode");
-          return "0";
+        useBarcode: (ScannedBarcode barcode) async {
+          debugPrint("Continuous Scan Barcode: ${barcode.rawValue}");
+          return ScanSoundResult.success;
         },
       );
 }
