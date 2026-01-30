@@ -7,14 +7,17 @@ import "package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart
 import "package:just_audio/just_audio.dart";
 import 'package:qr_scan/enums.dart';
 import 'package:qr_scan/isolate.dart';
+import 'package:qr_scan/controller.dart';
 import 'package:qr_scan/models.dart';
 import "package:qr_scan/mlkit_utils.dart";
 
 // Public exports so users only need: import 'package:qr_scan/qr_scan.dart';
 export 'package:qr_scan/enums.dart';
+export 'package:qr_scan/controller.dart';
 export 'package:qr_scan/models.dart' show ScannedBarcode;
+export 'package:qr_scan/scan_image.dart';
 export 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart'
-    show BarcodeFormat, BarcodeType;
+    show BarcodeFormat, BarcodeType, InputImage;
 
 class QrScan extends StatefulWidget {
   const QrScan({
@@ -26,6 +29,9 @@ class QrScan extends StatefulWidget {
     this.enableAudio = true,
     this.debounceDuration = const Duration(milliseconds: 2000),
     this.barcodeFormats = const [BarcodeFormat.all],
+    this.controller,
+    this.overlayBuilder,
+    this.enableZoom = true,
   });
 
   /// Callback receiving the full barcode object.
@@ -37,6 +43,14 @@ class QrScan extends StatefulWidget {
   final bool enableAudio;
   final Duration debounceDuration;
   final List<BarcodeFormat> barcodeFormats;
+  final QrScanController? controller;
+
+  /// Optional widget builder to overlay on top of the camera preview.
+  /// Use this to add a scan frame, crosshair, instructions, etc.
+  final Widget Function(BuildContext context)? overlayBuilder;
+
+  /// Whether pinch-to-zoom is enabled on the camera preview.
+  final bool enableZoom;
 
   @override
   State<QrScan> createState() => _QrScanState();
@@ -141,67 +155,84 @@ class _QrScanState extends State<QrScan> {
                   width: constraints.maxWidth,
                   height: constraints.maxWidth *
                       (selectedCameraAspectRatio == 0 ? 16 / 9 : 4 / 3),
-                  child: CameraAwesomeBuilder.awesome(
-                    imageAnalysisConfig: AnalysisConfig(maxFramesPerSecond: 15),
-                    onImageForAnalysis: _processImageBarcode,
-                    saveConfig: SaveConfig.photo(),
-                    sensorConfig: SensorConfig.single(
-                      sensor: Sensor.position(SensorPosition.back),
-                      flashMode: FlashMode.none,
-                      aspectRatio:
-                          CameraAspectRatios.values[selectedCameraAspectRatio],
-                      zoom: 0.0,
-                    ),
-                    previewFit: CameraPreviewFit.cover,
-                    middleContentBuilder: (state) => const SizedBox.shrink(),
-                    topActionsBuilder: (state) => const SizedBox.shrink(),
-                    // bottomActionsBuilder: (state) => const SizedBox.shrink(),
-                    bottomActionsBuilder: (state) => AwesomeTopActions(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 10),
-                      state: state,
-                      children: [
-                        AwesomeFlashButton(
-                          state: state,
-                          iconBuilder: (flashMode) {
-                            final icon = flashMode == FlashMode.always
-                                ? Icons.flash_on
-                                : Icons.flash_off;
-                            return AwesomeCircleWidget.icon(icon: icon);
-                          },
-                          onFlashTap: (sensorConfig, flashMode) async {
-                            final newFlashMode = flashMode != FlashMode.always
-                                ? FlashMode.always
-                                : FlashMode.none;
-                            await sensorConfig.setFlashMode(newFlashMode);
-                          },
+                  child: Stack(
+                    children: [
+                      CameraAwesomeBuilder.awesome(
+                        imageAnalysisConfig:
+                            AnalysisConfig(maxFramesPerSecond: 15),
+                        onImageForAnalysis: _processImageBarcode,
+                        saveConfig: SaveConfig.photo(),
+                        sensorConfig: SensorConfig.single(
+                          sensor: Sensor.position(SensorPosition.back),
+                          flashMode: FlashMode.none,
+                          aspectRatio: CameraAspectRatios
+                              .values[selectedCameraAspectRatio],
+                          zoom: 0.0,
                         ),
-                        if (state is PhotoCameraState)
-                          AwesomeAspectRatioButton(
-                            state: state,
-                            onAspectRatioTap:
-                                (sensorConfig, cameraAspectRatios) async {
-                              final newCameraAspectRatios =
-                                  cameraAspectRatios !=
-                                          CameraAspectRatios.ratio_16_9
-                                      ? CameraAspectRatios.ratio_16_9
-                                      : CameraAspectRatios.ratio_4_3;
-                              setState(() => selectedCameraAspectRatio =
-                                  newCameraAspectRatios.index);
-                              await sensorConfig
-                                  .setAspectRatio(newCameraAspectRatios);
-                            },
+                        previewFit: CameraPreviewFit.cover,
+                        onPreviewScaleBuilder: widget.enableZoom
+                            ? null
+                            : (_) => OnPreviewScale(onScale: (_) {}),
+                        middleContentBuilder: (state) =>
+                            const SizedBox.shrink(),
+                        topActionsBuilder: (state) => const SizedBox.shrink(),
+                        // bottomActionsBuilder: (state) => const SizedBox.shrink(),
+                        bottomActionsBuilder: (state) => AwesomeTopActions(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 30, vertical: 10),
+                          state: state,
+                          children: [
+                            AwesomeFlashButton(
+                              state: state,
+                              iconBuilder: (flashMode) {
+                                final icon = flashMode == FlashMode.always
+                                    ? Icons.flash_on
+                                    : Icons.flash_off;
+                                return AwesomeCircleWidget.icon(icon: icon);
+                              },
+                              onFlashTap: (sensorConfig, flashMode) async {
+                                final newFlashMode =
+                                    flashMode != FlashMode.always
+                                        ? FlashMode.always
+                                        : FlashMode.none;
+                                await sensorConfig.setFlashMode(newFlashMode);
+                              },
+                            ),
+                            if (state is PhotoCameraState)
+                              AwesomeAspectRatioButton(
+                                state: state,
+                                onAspectRatioTap:
+                                    (sensorConfig, cameraAspectRatios) async {
+                                  final newCameraAspectRatios =
+                                      cameraAspectRatios !=
+                                              CameraAspectRatios.ratio_16_9
+                                          ? CameraAspectRatios.ratio_16_9
+                                          : CameraAspectRatios.ratio_4_3;
+                                  setState(() => selectedCameraAspectRatio =
+                                      newCameraAspectRatios.index);
+                                  await sensorConfig
+                                      .setAspectRatio(newCameraAspectRatios);
+                                },
+                              ),
+                            AwesomeCameraSwitchButton(
+                              state: state,
+                              scale: 1,
+                              onSwitchTap: (state) async =>
+                                  await state.switchCameraSensor(
+                                      aspectRatio:
+                                          state.sensorConfig.aspectRatio),
+                            ),
+                            // if (state is PhotoCameraState) AwesomeLocationButton(state: state),
+                          ],
+                        ),
+                      ),
+                      if (widget.overlayBuilder != null)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: widget.overlayBuilder!(context),
                           ),
-                        AwesomeCameraSwitchButton(
-                          state: state,
-                          scale: 1,
-                          onSwitchTap: (state) async =>
-                              await state.switchCameraSensor(
-                                  aspectRatio: state.sensorConfig.aspectRatio),
                         ),
-                        // if (state is PhotoCameraState) AwesomeLocationButton(state: state),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
         );
@@ -209,6 +240,7 @@ class _QrScanState extends State<QrScan> {
 
   Future<void> _processImageBarcode(AnalysisImage img) async {
     if (_isProcessing) return;
+    if (widget.controller?.isScanning == false) return;
     _isProcessing = true;
     final inputImage = img.toInputImage();
     try {

@@ -3,11 +3,12 @@ import "package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart
 
 extension MLKitUtils on AnalysisImage {
   InputImage toInputImage() {
-    final planeData = when(nv21: (img) => img.planes, bgra8888: (img) => img.planes)
-        ?.map(
-          (plane) => plane.bytesPerRow,
-        )
-        .toList();
+    final planeData =
+        when(nv21: (img) => img.planes, bgra8888: (img) => img.planes)
+            ?.map(
+              (plane) => plane.bytesPerRow,
+            )
+            .toList();
 
     if (planeData == null || planeData.isEmpty) {
       throw StateError('No plane data available from camera image');
@@ -34,7 +35,8 @@ extension MLKitUtils on AnalysisImage {
     )!;
   }
 
-  InputImageRotation get inputImageRotation => InputImageRotation.values.byName(rotation.name);
+  InputImageRotation get inputImageRotation =>
+      InputImageRotation.values.byName(rotation.name);
 
   InputImageFormat get inputImageFormat {
     switch (format) {

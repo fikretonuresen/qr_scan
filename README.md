@@ -94,12 +94,12 @@ QrScan(
 
 The `useBarcode` callback return value controls which sound plays after processing:
 
-| Return Value | Sound         |
-|--------------|---------------|
-| `"0"`        | Success sound |
-| `"-1"`       | Fail sound    |
-| `"1"`        | Read sound    |
-| `null` / other | No sound    |
+| Return Value   | Sound         |
+| -------------- | ------------- |
+| `"0"`          | Success sound |
+| `"-1"`         | Fail sound    |
+| `"1"`          | Read sound    |
+| `null` / other | No sound      |
 
 A read sound also plays automatically when a barcode is first detected, before `useBarcode` is called.
 
@@ -123,21 +123,21 @@ QrScan(
 
 ### QrScan Widget
 
-| Parameter                    | Type                                        | Default | Description                          |
-|------------------------------|---------------------------------------------|---------|--------------------------------------|
-| `useBarcode`                 | `FutureOr<String?> Function(String barcode)` | required | Callback invoked with the scanned barcode value |
-| `selectedCameraAspectRatio`  | `int`                                       | `0`     | `0` for 16:9, `1` for 4:3           |
+| Parameter                   | Type                                         | Default  | Description                                     |
+| --------------------------- | -------------------------------------------- | -------- | ----------------------------------------------- |
+| `useBarcode`                | `FutureOr<String?> Function(String barcode)` | required | Callback invoked with the scanned barcode value |
+| `selectedCameraAspectRatio` | `int`                                        | `0`      | `0` for 16:9, `1` for 4:3                       |
 
 ### useBarcode Callback
 
 Called when a barcode is detected. Receives the raw barcode string and should return a string that determines which audio feedback to play.
 
-| Return Value | Effect        |
-|--------------|---------------|
-| `"0"`        | Plays success sound |
-| `"-1"`       | Plays fail sound    |
-| `"1"`        | Plays read sound    |
-| `null` / other | No sound played  |
+| Return Value   | Effect              |
+| -------------- | ------------------- |
+| `"0"`          | Plays success sound |
+| `"-1"`         | Plays fail sound    |
+| `"1"`          | Plays read sound    |
+| `null` / other | No sound played     |
 
 ## Example
 

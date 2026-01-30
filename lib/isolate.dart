@@ -91,9 +91,9 @@ class Responder {
         .first
         .timeout(const Duration(seconds: 2), onTimeout: () => 'timeout')
         .whenComplete(() {
-          _receivePort.close();
-          _isolate.kill(priority: Isolate.immediate);
-        });
+      _receivePort.close();
+      _isolate.kill(priority: Isolate.immediate);
+    });
   }
 }
 

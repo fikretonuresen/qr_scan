@@ -1,6 +1,6 @@
 name: qr_scan
 description: "Combines Google's ML Kit Barcode Scanning with CamerAwesome to scan qr and barcodes"
-version: 0.2.0
+version: 0.3.0
 homepage: "https://www.sezinsoft.com/"
 
 environment:
