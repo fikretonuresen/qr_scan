@@ -5,20 +5,34 @@ import "package:flutter/cupertino.dart";
 import "package:flutter/material.dart";
 import "package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart";
 import "package:just_audio/just_audio.dart";
-import 'package:qr_scan/enums.dart';
-import 'package:qr_scan/isolate.dart';
-import 'package:qr_scan/controller.dart';
-import 'package:qr_scan/models.dart';
-import "package:qr_scan/mlkit_utils.dart";
+import 'package:qr_scan/src/enums.dart';
+import 'package:qr_scan/src/isolate.dart';
+import 'package:qr_scan/src/controller.dart';
+import 'package:qr_scan/src/models.dart';
+import "package:qr_scan/src/mlkit_utils.dart";
 
 // Public exports so users only need: import 'package:qr_scan/qr_scan.dart';
-export 'package:qr_scan/enums.dart';
-export 'package:qr_scan/controller.dart';
-export 'package:qr_scan/models.dart' show ScannedBarcode;
-export 'package:qr_scan/scan_image.dart';
+export 'package:qr_scan/src/enums.dart';
+export 'package:qr_scan/src/controller.dart';
+export 'package:qr_scan/src/models.dart' show ScannedBarcode;
+export 'package:qr_scan/src/scan_image.dart';
 export 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart'
     show BarcodeFormat, BarcodeType, InputImage;
 
+/// A camera-based barcode and QR code scanner widget.
+///
+/// Combines CamerAwesome for the camera preview with Google ML Kit for
+/// barcode detection. Provides built-in audio feedback, duplicate scan
+/// prevention, and flash/aspect-ratio/camera-switch controls.
+///
+/// ```dart
+/// QrScan(
+///   useBarcode: (ScannedBarcode barcode) async {
+///     print('Scanned: ${barcode.rawValue}');
+///     return ScanSoundResult.success;
+///   },
+/// )
+/// ```
 class QrScan extends StatefulWidget {
   const QrScan({
     super.key,
@@ -34,22 +48,43 @@ class QrScan extends StatefulWidget {
     this.enableZoom = true,
   });
 
-  /// Callback receiving the full barcode object.
-  /// Returns a [ScanSoundResult] to trigger audio feedback.
+  /// Callback invoked when a barcode is detected.
+  ///
+  /// Receives a [ScannedBarcode] with raw value, display value, format, and
+  /// type. Return a [ScanSoundResult] to trigger audio feedback, or `null`
+  /// for no sound.
   final FutureOr<ScanSoundResult?> Function(ScannedBarcode barcode) useBarcode;
+
+  /// Camera preview aspect ratio index: `0` for 16:9, `1` for 4:3.
   final int selectedCameraAspectRatio;
+
+  /// Title shown in the multi-barcode selection dialog.
   final String multiBarcodeTitle;
+
+  /// Message shown in the multi-barcode selection dialog.
   final String multiBarcodeMessage;
+
+  /// Whether audio feedback is enabled. Defaults to `true`.
   final bool enableAudio;
+
+  /// Duration to ignore duplicate scans of the same barcode.
+  /// Defaults to 2 seconds.
   final Duration debounceDuration;
+
+  /// Barcode formats to detect. Defaults to [BarcodeFormat.all].
   final List<BarcodeFormat> barcodeFormats;
+
+  /// Optional controller to programmatically pause/resume scanning.
   final QrScanController? controller;
 
   /// Optional widget builder to overlay on top of the camera preview.
-  /// Use this to add a scan frame, crosshair, instructions, etc.
+  ///
+  /// The overlay is wrapped in [IgnorePointer] so it does not block
+  /// touch events (pinch-to-zoom, tap-to-focus) on the camera.
   final Widget Function(BuildContext context)? overlayBuilder;
 
   /// Whether pinch-to-zoom is enabled on the camera preview.
+  /// Defaults to `true`.
   final bool enableZoom;
 
   @override
@@ -69,21 +104,17 @@ class _QrScanState extends State<QrScan> {
   AudioPlayer? failSound;
 
   Future<void> _initAudio() async {
-    readSound = AudioPlayer()
-      ..setVolume(0)
-      ..setAsset("packages/qr_scan/assets/audio/read.wav")
-      ..load()
-      ..play();
-    successSound = AudioPlayer()
-      ..setVolume(0)
-      ..setAsset("packages/qr_scan/assets/audio/success.wav")
-      ..load()
-      ..play();
-    failSound = AudioPlayer()
-      ..setVolume(0)
-      ..setAsset("packages/qr_scan/assets/audio/fail.wav")
-      ..load()
-      ..play();
+    readSound = AudioPlayer();
+    await readSound!.setAsset("packages/qr_scan/assets/audio/read.wav");
+    await readSound!.setVolume(0);
+
+    successSound = AudioPlayer();
+    await successSound!.setAsset("packages/qr_scan/assets/audio/success.wav");
+    await successSound!.setVolume(0);
+
+    failSound = AudioPlayer();
+    await failSound!.setAsset("packages/qr_scan/assets/audio/fail.wav");
+    await failSound!.setVolume(0);
   }
 
   Future<void> initResponder() async {
@@ -96,7 +127,11 @@ class _QrScanState extends State<QrScan> {
   @override
   void initState() {
     super.initState();
-    if (widget.enableAudio) _initAudio();
+    if (widget.enableAudio) {
+      unawaited(_initAudio().catchError(
+        (e) => debugPrint('QrScan: audio init failed: $e'),
+      ));
+    }
     unawaited(initResponder());
   }
 
@@ -176,7 +211,6 @@ class _QrScanState extends State<QrScan> {
                         middleContentBuilder: (state) =>
                             const SizedBox.shrink(),
                         topActionsBuilder: (state) => const SizedBox.shrink(),
-                        // bottomActionsBuilder: (state) => const SizedBox.shrink(),
                         bottomActionsBuilder: (state) => AwesomeTopActions(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 30, vertical: 10),
@@ -222,7 +256,6 @@ class _QrScanState extends State<QrScan> {
                                       aspectRatio:
                                           state.sensorConfig.aspectRatio),
                             ),
-                            // if (state is PhotoCameraState) AwesomeLocationButton(state: state),
                           ],
                         ),
                       ),
@@ -263,11 +296,12 @@ class _QrScanState extends State<QrScan> {
   List<ScannedBarcode> processBarcodes(List<ScannedBarcode> barcodes) {
     final returnList = <ScannedBarcode>[];
     for (final barcode in barcodes) {
-      if (!checkSet.contains(barcode.rawValue)) {
+      final dedupeKey = barcode.rawValue ?? barcode.displayValue;
+      if (!checkSet.contains(dedupeKey)) {
         returnList.add(barcode);
-        checkSet.add(barcode.rawValue);
+        checkSet.add(dedupeKey);
         Future<void>.delayed(
-            widget.debounceDuration, () => checkSet.remove(barcode.rawValue));
+            widget.debounceDuration, () => checkSet.remove(dedupeKey));
       }
     }
     return returnList;

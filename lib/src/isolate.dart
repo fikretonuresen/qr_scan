@@ -3,7 +3,7 @@ import 'dart:isolate';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
-import 'package:qr_scan/models.dart';
+import 'package:qr_scan/src/models.dart';
 
 /// Manages communication with the background barcode processing isolate.
 class Responder {

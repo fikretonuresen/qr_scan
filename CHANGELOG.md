@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
+## [0.4.0] - 2026-01-30
+
+### Added
+
+- `timeout` parameter on `scanImageForBarcodes()` (default 10s) — throws `TimeoutException` if ML Kit hangs on large/corrupted images
+- Gallery scan example page demonstrating `scanImageForBarcodes()` with `image_picker`
+- Unit tests for `ScannedBarcode`, `ScanSoundResult`, `QrScanController`, and public API exports
+- Dartdoc comments on all public API members
+
+### Fixed
+
+- `_initAudio` now has error handling — failures log a warning instead of silently swallowing exceptions
+- Barcode debounce no longer treats two different barcodes with `null` rawValue as duplicates (falls back to `displayValue`)
+
+### Changed
+
+- Restructured `lib/` into `lib/src/` following Dart package layout conventions
+- Upgraded `flutter_lints` from `^4.0.0` to `^6.0.0`
+- Removed unused `mockito` and `build_runner` dev dependencies
+- Rewrote README.md to reflect current API surface and all parameters
+
 ## [0.3.0] - 2026-01-30
 
 ### Added

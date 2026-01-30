@@ -5,9 +5,16 @@ import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart
 /// Clean data object passed to the user callback.
 /// Wraps ML Kit's Barcode with only the fields consumers need.
 class ScannedBarcode {
+  /// The raw string value encoded in the barcode, or `null` if unavailable.
   final String? rawValue;
+
+  /// A human-readable representation of the barcode value, or `null`.
   final String? displayValue;
+
+  /// The barcode symbology (e.g. QR code, Code 128, EAN-13).
   final BarcodeFormat format;
+
+  /// The semantic type of the barcode content (e.g. URL, email, phone).
   final BarcodeType type;
 
   const ScannedBarcode({

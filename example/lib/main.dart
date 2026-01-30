@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:qr_scan/qr_scan.dart';
 
 void main() {
@@ -62,6 +65,15 @@ class _MainPageState extends State<MainPage> {
                             builder: (context) => const ControlledScanPage()));
                   },
                   child: const Text("Controlled Scan")),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const GalleryScanPage()));
+                  },
+                  child: const Text("Scan from Gallery")),
             ],
           ),
         ),
@@ -76,18 +88,16 @@ class OneTimeScanPage extends StatefulWidget {
 }
 
 class _OneTimeScanPageState extends State<OneTimeScanPage> {
-  String _barcode = "";
   @override
   Widget build(BuildContext context) => PopScope(
         canPop: false,
-        onPopInvoked: (didPop) {
-          if (!didPop) Navigator.pop(context, _barcode);
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) Navigator.pop(context, "");
         },
         child: QrScan(
           useBarcode: (ScannedBarcode barcode) async {
-            _barcode = barcode.rawValue ?? "";
             debugPrint("One Time Scan Barcode: ${barcode.rawValue}");
-            Navigator.pop(context);
+            Navigator.pop(context, barcode.rawValue ?? "");
             return ScanSoundResult.success;
           },
         ),
@@ -210,6 +220,99 @@ class _ControlledScanPageState extends State<ControlledScanPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class GalleryScanPage extends StatefulWidget {
+  const GalleryScanPage({super.key});
+
+  @override
+  State<GalleryScanPage> createState() => _GalleryScanPageState();
+}
+
+class _GalleryScanPageState extends State<GalleryScanPage> {
+  List<ScannedBarcode>? _results;
+  bool _scanning = false;
+  String? _errorMessage;
+
+  Future<void> _pickAndScan() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1920,
+      maxHeight: 1920,
+    );
+    if (picked == null) return;
+
+    setState(() {
+      _scanning = true;
+      _errorMessage = null;
+    });
+    try {
+      final inputImage = InputImage.fromFilePath(picked.path);
+      final barcodes = await scanImageForBarcodes(inputImage);
+      setState(() => _results = barcodes);
+    } on TimeoutException {
+      setState(() {
+        _results = null;
+        _errorMessage =
+            "Processing timed out. Try a smaller or lower-resolution image.";
+      });
+    } catch (e) {
+      debugPrint('Gallery scan error: $e');
+      setState(() {
+        _results = null;
+        _errorMessage = "Failed to process image.";
+      });
+    } finally {
+      setState(() => _scanning = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Gallery Scan")),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilledButton.icon(
+              onPressed: _scanning ? null : _pickAndScan,
+              icon: const Icon(Icons.photo_library),
+              label: const Text("Pick Image"),
+            ),
+            const SizedBox(height: 24),
+            if (_scanning) const Center(child: CircularProgressIndicator()),
+            if (_errorMessage != null)
+              Text(_errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red)),
+            if (_errorMessage == null && _results != null && _results!.isEmpty)
+              const Text("No barcodes found in the image.",
+                  textAlign: TextAlign.center),
+            if (_results != null && _results!.isNotEmpty)
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _results!.length,
+                  itemBuilder: (context, index) {
+                    final barcode = _results![index];
+                    return Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.qr_code),
+                        title: Text(barcode.rawValue ?? ""),
+                        subtitle: Text(
+                            "${barcode.format.name} \u2022 ${barcode.type.name}"),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
